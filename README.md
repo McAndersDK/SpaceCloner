@@ -2,7 +2,9 @@
 PowerShell script to help you clone a space using the Octopus Deploy Restful API.
 
 # This cloning process is provided as is
-This script was developed internally for the Customer Success team at Octopus Deploy to solve specific use cases we encounter each day.  We are sharing this script to help other users of Octopus Deploy.  To cover as many use cases as we run into as possible, the script has a set of generic comparisons in place.  It matches by name, order is tracked via a simple index, etc.  We work in Octopus all day every day.  As such, we are okay with a script that accomplishes 80-90% of a clone, and then spending a bit of time doing some manual work.  
+This script was developed internally for the Customer Success team at Octopus Deploy to solve specific use cases we encounter each day.  We are sharing this script to help other users of Octopus Deploy.  To cover as many use cases as we run into as possible, the script has a set of generic comparisons in place.  It matches by name, order is tracked via a simple index, etc.  We work in Octopus all day every day.  As such, we are okay with a script that accomplishes 80-90% of a clone, and then spending a bit of time doing some manual work. 
+
+> **Note:** Owing to the "as is" nature of this script, **Octopus Deploy does not provide any support for this via our support channels.**
 
 This repository is [licensed](license) under the Apache license.  It is possible for the script to work for your use cases without modification.  However, it is impossible for us to write a script that matches every specific use case.  For example, you might store a number of your variables in a key store, with Octopus storing the credentials.  You could update the script so when it comes across a specific variable name the credentials are inserted into the variable value instead of pulling from the source instance.  
 
@@ -20,9 +22,15 @@ We do accept Pull Requests on this repository.  See [Contributing guidelines](do
 
 ## Tested Octopus Deploy Versions
 
-This script was developed using an Octopus Deploy instance running `2020.1.x` and later `2020.2.x`.  It was tested against a variety of different versions.  It should work with Octopus Deploy `3.4` or higher.  However, you'll have much better luck using `2020.x` or higher.
+This script has been tested against the following versions of Octopus Deploy:
 
-You will notice some version checks being run in the script.  This is to prevent the script from calling specific API endpoints when it shouldn't.
+- `2020.1.x`
+- `2020.2.x`
+- `2020.3.x`
+
+It should work with `3.4.x`+ release of Octopus Deploy.  The script will run some version checks to ensure it doesn't call the wrong API endpoint.  There is a far better chance the script will work using a `2020.x` release of Octopus Deploy.
+
+The source instance and the destination instance **must** be running the same major/minor (2020.1, 2020.2) release.  The script will check the version of the source instance and destination instance to ensure this rule is met.
 
 # Just Get Me Going!
 
