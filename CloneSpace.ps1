@@ -22,7 +22,9 @@ param (
     $ParentProjectName,
     $ChildProjectsToSync,
     $TenantsToClone,
-    $SpaceTeamsToClone,    
+    $SpaceTeamsToClone, 
+    $PackagesToClone,   
+    $RunbooksToClone,
     $OverwriteExistingVariables,
     $AddAdditionalVariableValuesOnExistingVariableSets,
     $OverwriteExistingCustomStepTemplates,
@@ -30,7 +32,10 @@ param (
     $CloneProjectRunbooks,
     $CloneTeamUserRoleScoping,
     $CloneProjectChannelRules,
-    $CloneProjectVersioningReleaseCreationSettings  
+    $CloneProjectVersioningReleaseCreationSettings,
+    $CloneProjectDeploymentProcess,
+    $IgnoreVersionCheckResult,
+    $SkipPausingWhenIgnoringVersionCheckResult
 )
 
 . ($PSScriptRoot + ".\src\Core\Logging.ps1")
@@ -48,6 +53,7 @@ param (
 . ($PSScriptRoot + ".\src\Cloners\LifecycleCloner.ps1")
 . ($PSScriptRoot + ".\src\Cloners\LogoCloner.ps1")
 . ($PSScriptRoot + ".\src\Cloners\MachinePolicyCloner.ps1")
+. ($PSScriptRoot + ".\src\Cloners\PackageCloner.ps1")
 . ($PSScriptRoot + ".\src\Cloners\ParentProjectTemplateSyncer.ps1")
 . ($PSScriptRoot + ".\src\Cloners\ProcessCloner.ps1")
 . ($PSScriptRoot + ".\src\Cloners\ProjectChannelCloner.ps1")
@@ -110,6 +116,26 @@ if ($null -eq $CloneProjectVersioningReleaseCreationSettings)
     $CloneProjectVersioningReleaseCreationSettings = $false
 }
 
+if ($null -eq $CloneProjectDeploymentProcess)
+{
+    $CloneProjectDeploymentProcess = $true
+}
+
+if ($null -eq $RunbooksToClone)
+{
+    $RunbooksToClone = "all"
+}
+
+if ($null -eq $IgnoreVersionCheckResult)
+{
+    $IgnoreVersionCheckResult = $false
+}
+
+if ($null -eq $SkipPausingWhenIgnoringVersionCheckResult)
+{
+    $SkipPausingWhenIgnoringVersionCheckResult = $false
+}
+
 $CloneScriptOptions = @{
     EnvironmentsToClone = $EnvironmentsToClone; 
     WorkerPoolsToClone = $WorkerPoolsToClone; 
@@ -134,18 +160,18 @@ $CloneScriptOptions = @{
     ChildProjectsToSync = $ChildProjectsToSync;
     ParentProjectName = $ParentProjectName;
     SpaceTeamsToClone = $SpaceTeamsToClone;
+    PackagesToClone = $PackagesToClone;
+    RunbooksToClone = $RunbooksToClone;
     CloneTeamUserRoleScoping = $CloneTeamUserRoleScoping;
     CloneProjectChannelRules = $CloneProjectChannelRules;
-    CloneProjectVersioningReleaseCreationSettings = $CloneProjectVersioningReleaseCreationSettings
+    CloneProjectVersioningReleaseCreationSettings = $CloneProjectVersioningReleaseCreationSettings;
+    CloneProjectDeploymentProcess = $CloneProjectDeploymentProcess;
 }
 
 $sourceData = Get-OctopusData -octopusUrl $SourceOctopusUrl -octopusApiKey $SourceOctopusApiKey -spaceName $SourceSpaceName
 $destinationData = Get-OctopusData -octopusUrl $DestinationOctopusUrl -octopusApiKey $DestinationOctopusApiKey -spaceName $DestinationSpaceName
 
-if ($sourceData.MajorVersion -ne $destinationData.MajorVersion -or $sourceData.MinorVersion -ne $sourceData.MinorVersion)
-{
-    Throw "The source $($sourceData.OctopusUrl) is on version $($sourceData.MajorVersion).$($sourceData.MinorVersion).x while the destination $($destinationData.OctopusUrl) is on version $($destinationData.MajorVersion).$($DestinationData.MinorVersion).x.  Nothing good will come of this clone.  Please upgrade the source or destination to match and try again."    
-}
+Compare-OctopusVersions -SourceData $sourceData -DestinationData $destinationData -IgnoreVersionCheckResult $IgnoreVersionCheckResult -SkipPausingWhenIgnoringVersionCheckResult $SkipPausingWhenIgnoringVersionCheckResult
 
 if ($sourceData.OctopusUrl -eq $destinationData.OctopusUrl -and $SourceSpaceName -eq $DestinationSpaceName)
 {
@@ -163,10 +189,12 @@ if ($sourceData.OctopusUrl -eq $destinationData.OctopusUrl -and $SourceSpaceName
 
     if ($canProceed -eq $false)
     {
-        throw "Invalid parameters detected.  Please check log and correct them."
+        Write-OctopusCritical "Invalid parameters detected.  Please check log and correct them."
+        Exit 1
     }
 }
 
+Copy-OctopusBuiltInPackages -sourceData $sourceData -destinationData $destinationData -CloneScriptOptions $CloneScriptOptions
 Copy-OctopusEnvironments -sourceData $sourceData -destinationData $destinationData -cloneScriptOptions $CloneScriptOptions
 Copy-OctopusWorkerPools -sourceData $sourceData -destinationData $destinationData -cloneScriptOptions $CloneScriptOptions
 Copy-OctopusProjectGroups -sourceData $sourceData -destinationData $destinationData -cloneScriptOptions $CloneScriptOptions

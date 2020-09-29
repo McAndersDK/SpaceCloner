@@ -20,6 +20,8 @@ The other options are:
 - `CloneProjectChannelRules` - set to `true` as you'll want to include the channel rules with the project.
 - `CloneTeamUserRoleScoping` - set to `true` as you'll want to include all the scoped permissions with the teams.
 - `CloneProjectVersioningReleaseCreationSettings` - set to `true` as you'll want to include the release creation settings.
+- `CloneProjectDeploymentProcess` - set to `true` as you'll want to include the project deployment process.
+- `CloneProjectRunbooks` - set to `true` as you'll want to include the project runbooks.
 
 ```PowerShell
 CloneSpace.ps1 -SourceOctopusUrl "https://instance1.yoursite.com" `
@@ -43,14 +45,17 @@ CloneSpace.ps1 -SourceOctopusUrl "https://instance1.yoursite.com" `
     -WorkersToCLone "AWS*" `
     -TargetsToClone "AWS*" `
     -MachinePoliciesToClone "all" `
-    -SpaceTeamsToClone "all" `   
+    -SpaceTeamsToClone "all" `  
+    -PackagesToClone "Redgate.*,DBUp.*" ` 
     -OverwriteExistingVariables "true" `
     -AddAdditionalVariableValuesOnExistingVariableSets "true" `
     -OverwriteExistingCustomStepTemplates "true" `
     -OverwriteExistingLifecyclesPhases "true" `
     -CloneProjectChannelRules "true" `
     -CloneTeamUserRoleScoping "true" `
-    -CloneProjectVersioningReleaseCreationSettings "true"
+    -CloneProjectVersioningReleaseCreationSettings "true" `
+    -CloneProjectRunbooks "true" `
+    -CloneProjectDeploymentProcess "true"
 ```
 
 # Example - CloneSpaceProject.ps1
@@ -66,6 +71,8 @@ The other options are:
 - `CloneProjectChannelRules` - set to `true` as you'll want to include the channel rules with the project.
 - `CloneTeamUserRoleScoping` - set to `true` as you'll want to include all the scoped permissions with the teams.
 - `CloneProjectVersioningReleaseCreationSettings` - set to `true` as you'll want to include the release creation settings.
+- `CloneProjectDeploymentProcess` - set to `true` as you'll want to include the project deployment process.
+- `CloneProjectRunbooks` - set to `true` as you'll want to include the project runbooks.
 
 ```PowerShell
 CloneSpaceProject.ps1 -SourceOctopusUrl "https://samples.octopus.app" `
@@ -85,5 +92,7 @@ CloneSpaceProject.ps1 -SourceOctopusUrl "https://samples.octopus.app" `
     -OverwriteExistingLifecyclesPhases "true" `
     -CloneProjectChannelRules "true" `
     -CloneTeamUserRoleScoping "true" `
-    -CloneProjectVersioningReleaseCreationSettings "true"
+    -CloneProjectVersioningReleaseCreationSettings "true" `
+    -CloneProjectRunbooks "true" `
+    -CloneProjectDeploymentProcess "true"
 ```

@@ -31,6 +31,29 @@ function Get-OctopusItemById
     return $null    
 }
 
+function Get-OctopusItemByPackageId
+{
+    param (
+        $ItemList,
+        $ItemPackageId
+        ) 
+        
+    Write-OctopusVerbose "Attempting to find $ItemPackageId in the item list of $($ItemList.Length) item(s)"
+
+    foreach($item in $ItemList)
+    {
+        Write-OctopusVerbose "Checking to see if $($item.PackageId) matches with $ItemPackageId"
+        if ($item.PackageId -eq $ItemPackageId)
+        {
+            Write-OctopusVerbose "The Ids match, return the item $($item.PackageId)"
+            return $item
+        }
+    }
+
+    Write-OctopusVerbose "No match found returning null"
+    return $null    
+}
+
 function Convert-SourceIdToDestinationId
 {
     param(
@@ -184,6 +207,28 @@ function Get-OctopusFilteredList
     return $filteredList
 }
 
+function Get-OctopusFilteredListByPackageId
+{
+    param(
+        $itemList,
+        $itemType,
+        $filters
+    )
+
+    $filteredList = New-OctopusPackageIdFilteredList -itemList $itemList -itemType $itemType -filters $filters  
+        
+    if ($filteredList.Length -eq 0)
+    {
+        Write-OctopusWarning "No $itemType items were found to clone, skipping"
+    }
+    else
+    {
+        Write-OctopusSuccess "$itemType items were found to clone, starting clone for $itemType"
+    }
+
+    return $filteredList
+}
+
 function Get-OctopusExclusionList
 {
     param(
@@ -214,7 +259,7 @@ function New-OctopusFilteredList
     
     Write-OctopusSuccess "Creating filter list for $itemType with a filter of $filters"
 
-    if ([string]::IsNullOrWhiteSpace($filters) -eq $false)
+    if ([string]::IsNullOrWhiteSpace($filters) -eq $false -and $null -ne $itemList)
     {
         $splitFilters = $filters -split ","
 
@@ -240,6 +285,56 @@ function New-OctopusFilteredList
                 else
                 {
                     Write-OctopusVerbose "The item $($item.Name) does not match filter $filter"
+                }
+            }
+        }
+    }
+    else
+    {
+        Write-OctopusWarning "The filter for $itemType was not set."
+    }
+
+    return $filteredList
+}
+
+function New-OctopusPackageIdFilteredList
+{
+    param(
+        $itemList,
+        $itemType,
+        $filters
+    )
+
+    $filteredList = @()  
+    
+    Write-OctopusSuccess "Creating filter list for $itemType with a filter of $filters"
+
+    if ([string]::IsNullOrWhiteSpace($filters) -eq $false -and $null -ne $itemList)
+    {
+        $splitFilters = $filters -split ","
+
+        foreach($item in $itemList)
+        {
+            foreach ($filter in $splitFilters)
+            {
+                Write-OctopusVerbose "Checking to see if $filter matches $($item.PackageId)"
+                if ([string]::IsNullOrWhiteSpace($filter))
+                {
+                    continue
+                }
+                if (($filter).ToLower() -eq "all")
+                {
+                    Write-OctopusVerbose "The filter is 'all' -> adding $($item.PackageId) to $itemType filtered list"
+                    $filteredList += $item
+                }
+                elseif ($item.PackageId -like $filter)
+                {
+                    Write-OctopusVerbose "The filter $filter matches $($item.PackageId), adding $($item.PackageId) to $itemType filtered list"
+                    $filteredList += $item
+                }
+                else
+                {
+                    Write-OctopusVerbose "The item $($item.PackageId) does not match filter $filter"
                 }
             }
         }
@@ -294,4 +389,46 @@ function Convert-OctopusProcessDeploymentStepId
     }
 
     return $null
+}
+
+function Compare-OctopusVersions
+{
+    param(
+        $sourceData,
+        $destinationData,
+        $IgnoreVersionCheckResult,
+        $SkipPausingWhenIgnoringVersionCheckResult
+    )
+
+    if ($sourceData.MajorVersion -ne $destinationData.MajorVersion -or $sourceData.MinorVersion -ne $destinationData.MinorVersion)
+    {
+        Write-OctopusCritical "The source $($sourceData.OctopusUrl) is on version $($sourceData.MajorVersion).$($sourceData.MinorVersion).x while the destination $($destinationData.OctopusUrl) is on version $($destinationData.MajorVersion).$($DestinationData.MinorVersion).x."
+
+        if ($IgnoreVersionCheckResult -eq $false)
+        {
+            Write-OctopusCritical "Nothing good will come of this clone.  Please upgrade the source or destination to match and try again.  You can ignore this warning by setting the argument IgnoreVersionCheckResult to $true"    
+            Exit 1
+        }
+
+        Write-OctopusCritical "You have chosen to ignore that difference.  This run may work or it may not work."
+        
+        if ($SkipPausingWhenIgnoringVersionCheckResult -eq $false)
+        {
+            Write-OctopusCritical "I am pausing for 20 seconds to give you a chance to cancel.  If you cloning to a production instance it is highly recommended you cancel this.  You can skip this pausing by setting the argument SkipPausingWhenIgnoringVersionCheckResult to $true"
+            $versionCheckCountDown = 20
+            
+            while ($versionCheckCountDown -gt 0)
+            {
+                Write-OctopusCritical "Seconds left: $versionCheckCountDown"
+                Start-Sleep -Seconds 1        
+                $versionCheckCountDown -= 1
+            }
+        }
+        else
+        {
+            Write-OctopusCritical "Someone ate their YOLO-flakes today and elected to skip the pause of the version check as well."    
+        }
+        
+        Write-OctopusCritical "Alright, this is a bold choice, I like it.  Proceeding."
+    }
 }
